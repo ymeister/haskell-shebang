@@ -11,8 +11,22 @@ let nix-thunk = import ./deps/nix-thunk { inherit pkgs; };
     prelude-overlay = import (deps.haskell-prelude + "/overlay.nix") { inherit pkgs; };
     with-prelude-overlay = "${prelude-overlay}/bin/with-prelude-overlay";
 
-in writeScriptBin "haskell-shebang" ''
-  #!/bin/sh
+in symlinkJoin {
+  name = "haskell-shebang";
+  paths = [
+    (
+      writeScriptBin "haskell-shebang" ''
+        #!/bin/sh
 
-  exec ${with-prelude-overlay} "${haskell-shebang}/bin/nix-haskell-shebang" prelude "$@"
-''
+        exec ${with-prelude-overlay} "${haskell-shebang}/bin/nix-haskell-shebang" -O2 -threaded -rtsopts -with-rtsopts=-N prelude "$@"
+      ''
+    )
+    (
+      writeScriptBin "haskell-repl" ''
+        #!/bin/sh
+
+        exec ${with-prelude-overlay} "${haskell-shebang}/bin/nix-haskell-repl" prelude "$@"
+      ''
+    )
+  ];
+}
